@@ -8,7 +8,7 @@ local config = {
     volume = 0.5,
     -- New combo mode settings
     combo_mode = true, -- If true, uses combo detection; if false, uses word detection
-    combo_threshold = 5, -- Number of combos needed
+    combo_threshold = 3, -- Number of combos needed
     combo_time_window = 5, -- Time window in seconds
     cheat_messages = {
         "HEALTH RESTORED",
@@ -36,10 +36,16 @@ local function get_default_sound_path()
     -- First try to find the sound in the plugin's assets directory
     local plugin_path = debug.getinfo(1, "S").source:match("@?(.*/)")
     if plugin_path then
-        local assets_path = plugin_path .. "../assets/gta-cheat-sound.mp3"
+        local assets_path = plugin_path .. "../../assets/gta-cheat-sound.mp3"
         if vim.fn.filereadable(assets_path) == 1 then
-            return assets_path
+            return vim.fn.fnamemodify(assets_path, ":p") -- Get absolute path
         end
+    end
+    
+    -- Try current working directory
+    local cwd_path = vim.fn.getcwd() .. "/assets/gta-cheat-sound.mp3"
+    if vim.fn.filereadable(cwd_path) == 1 then
+        return vim.fn.fnamemodify(cwd_path, ":p")
     end
     
     -- Fallback to user's home directory
@@ -58,6 +64,20 @@ local function play_cheat_sound()
     if not config.enabled then return end
     
     local sound_path = config.sound_file or get_default_sound_path()
+    
+    -- Debug: Show which sound file we're trying to play
+    vim.api.nvim_echo({
+        {string.format("Attempting to play sound: %s", sound_path), "WarningMsg"}
+    }, false, {})
+    
+    -- Check if sound file exists
+    if vim.fn.filereadable(sound_path) ~= 1 then
+        vim.api.nvim_echo({
+            {string.format("Sound file not found: %s", sound_path), "ErrorMsg"}
+        }, true, {})
+        return
+    end
+    
     local play_cmd
     
     if vim.fn.has("win32") == 1 then
@@ -102,7 +122,25 @@ local function play_cheat_sound()
     end
     
     if play_cmd then
-        vim.fn.jobstart(play_cmd, { detach = true })
+        -- Debug: Show the command being executed
+        vim.api.nvim_echo({
+            {string.format("Executing sound command: %s", table.concat(play_cmd, " ")), "Comment"}
+        }, false, {})
+        
+        vim.fn.jobstart(play_cmd, { 
+            detach = true,
+            on_exit = function(_, exit_code)
+                if exit_code ~= 0 then
+                    vim.api.nvim_echo({
+                        {string.format("Sound command failed with exit code: %d", exit_code), "ErrorMsg"}
+                    }, false, {})
+                end
+            end
+        })
+    else
+        vim.api.nvim_echo({
+            {"No suitable audio player found", "ErrorMsg"}
+        }, true, {})
     end
 end
 
@@ -180,6 +218,9 @@ local function is_complex_combo(key)
         "gg", "gw", "gq", "gt", "gT", "g~", "gu", "gU",
         "zz", "zt", "zb", "zf", "zo", "zc", "za", "zr", "zm",
         "dd", "yy", "cc", ">>", "<<", "==",
+        -- Text object combinations
+        "ciw", "diw", "yiw", "caw", "daw", "yaw",
+        "cit", "dit", "yit", "cat", "dat", "yat",
     }
     
     for _, seq in ipairs(complex_sequences) do
@@ -212,11 +253,6 @@ local function record_combo(key)
     
     -- Add new combo with timestamp
     table.insert(combo_history, vim.fn.reltime())
-    
-    -- Debug output (optional - can be removed later)
-    vim.api.nvim_echo({
-        {string.format("Combo detected: %s (%d/%d)", key, #combo_history, config.combo_threshold), "Comment"}
-    }, false, {})
     
     -- Check if we've reached the threshold
     if #combo_history >= config.combo_threshold then
@@ -274,7 +310,15 @@ local function on_key_handler(key, typed)
     local multi_key_patterns = {
         "gg", "gw", "gq", "gt", "gT", "g~", "gu", "gU", "g%d+",
         "zz", "zt", "zb", "zf", "zo", "zc", "za", "zr", "zm", "z%d+",
-        "dd", "yy", "cc", ">>", "<<", "==", "d%d+", "y%d+", "c%d+"
+        "dd", "yy", "cc", ">>", "<<", "==", "d%d+", "y%d+", "c%d+",
+        -- Text object combinations
+        "ciw", "diw", "yiw", "caw", "daw", "yaw",
+        "cit", "dit", "yit", "cat", "dat", "yat",
+        "ci\"", "di\"", "yi\"", "ca\"", "da\"", "ya\"",
+        "ci'", "di'", "yi'", "ca'", "da'", "ya'",
+        "ci%)", "di%)", "yi%)", "ca%)", "da%)", "ya%)",
+        "ci%]", "di%]", "yi%]", "ca%]", "da%]", "ya%]",
+        "ci%}", "di%}", "yi%}", "ca%}", "da%}", "ya%}"
     }
     
     local sequence_found = false

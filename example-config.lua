@@ -10,7 +10,7 @@ require("sanvim").setup({
     
     -- Combo mode settings (NEW!)
     combo_mode = true, -- Set to false for word mode
-    combo_threshold = 5, -- Number of complex combos needed
+    combo_threshold = 3, -- Number of complex combos needed
     combo_time_window = 5, -- Time window in seconds
     
     -- Word mode settings

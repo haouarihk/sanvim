@@ -30,7 +30,7 @@ Add this to your LazyVim plugins configuration:
         require("sanvim").setup({
             enabled = true,
             combo_mode = true, -- Use combo mode by default
-            combo_threshold = 5, -- Number of combos needed
+            combo_threshold = 3, -- Number of combos needed
             combo_time_window = 5, -- Time window in seconds
             min_word_length = 5, -- For word mode
             -- Customize cheat messages
@@ -173,7 +173,7 @@ cheat_messages = {
 ### Combo Mode (Default)
 1. **Key Combination Tracking**: Monitors complex key combinations (Ctrl+, Alt+, function keys, multi-key sequences)
 2. **Time Window**: Tracks combinations within a 5-second sliding window
-3. **Threshold Detection**: Triggers when 5 complex combos are executed within the time window
+3. **Threshold Detection**: Triggers when 3 complex combos are executed within the time window
 4. **Insert Mode Exclusion**: Regular typing in insert mode doesn't count (avoiding text mode interference)
 5. **Sound & Message**: Plays the GTA sound and shows a random cheat message
 
