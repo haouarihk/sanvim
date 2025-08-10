@@ -175,8 +175,21 @@ local function is_complex_combo(key)
         return true
     end
     
-    -- Multi-character sequences that aren't just typing
-    if #key > 1 and not key:match("^[a-zA-Z0-9]$") then
+    -- Specific multi-key sequences (even if already handled in multi-key detection)
+    local complex_sequences = {
+        "gg", "gw", "gq", "gt", "gT", "g~", "gu", "gU",
+        "zz", "zt", "zb", "zf", "zo", "zc", "za", "zr", "zm",
+        "dd", "yy", "cc", ">>", "<<", "==",
+    }
+    
+    for _, seq in ipairs(complex_sequences) do
+        if key == seq then
+            return true
+        end
+    end
+    
+    -- Any special key notation
+    if key:match("^<.*>$") then
         return true
     end
     
@@ -199,6 +212,11 @@ local function record_combo(key)
     
     -- Add new combo with timestamp
     table.insert(combo_history, vim.fn.reltime())
+    
+    -- Debug output (optional - can be removed later)
+    vim.api.nvim_echo({
+        {string.format("Combo detected: %s (%d/%d)", key, #combo_history, config.combo_threshold), "Comment"}
+    }, false, {})
     
     -- Check if we've reached the threshold
     if #combo_history >= config.combo_threshold then
@@ -226,8 +244,12 @@ function M.on_insert_char_pre()
     end
 end
 
--- Handle key events for combo detection via keymap tracking
-function M.on_keymap()
+-- Global key sequence tracker
+local key_sequence = ""
+local key_sequence_timer = nil
+
+-- Handle key events for combo detection using vim.on_key
+local function on_key_handler(key, typed)
     if not config.enabled or not config.combo_mode then return end
     
     -- Get the current mode to exclude insert mode (text typing)
@@ -236,41 +258,52 @@ function M.on_keymap()
         return -- Skip insert mode - this is "text mode" typing
     end
     
-    -- This will be called by our keymap interceptor
-    local key = vim.v.count1 > 1 and string.format("%d", vim.v.count1) or ""
-    key = key .. (vim.v.register ~= '"' and string.format('"%s', vim.v.register) or "")
-    key = key .. vim.v.operator
+    -- Convert key codes to readable strings
+    local keystr = vim.fn.keytrans(key)
+    if not keystr or keystr == "" then return end
     
-    if key ~= "" then
-        record_combo(key)
+    -- Reset sequence timer
+    if key_sequence_timer then
+        vim.fn.timer_stop(key_sequence_timer)
     end
-end
-
--- Create keymaps to intercept complex combinations
-local function setup_combo_keymaps()
-    if not config.combo_mode then return end
     
-    -- Common complex key combinations to track
-    local complex_keys = {
-        "<C-a>", "<C-b>", "<C-c>", "<C-d>", "<C-e>", "<C-f>", "<C-g>", "<C-h>",
-        "<C-j>", "<C-k>", "<C-l>", "<C-n>", "<C-o>", "<C-p>", "<C-r>", "<C-s>",
-        "<C-t>", "<C-u>", "<C-v>", "<C-w>", "<C-x>", "<C-y>", "<C-z>",
-        "<A-a>", "<A-b>", "<A-c>", "<A-d>", "<A-e>", "<A-f>", "<A-g>", "<A-h>",
-        "<A-i>", "<A-j>", "<A-k>", "<A-l>", "<A-m>", "<A-n>", "<A-o>", "<A-p>",
-        "<F1>", "<F2>", "<F3>", "<F4>", "<F5>", "<F6>", "<F7>", "<F8>",
-        "<F9>", "<F10>", "<F11>", "<F12>",
-        "gg", "gw", "gq", "gt", "gT", "g~", "gu", "gU",
-        "zz", "zt", "zb", "zf", "zo", "zc", "za", "zr", "zm",
-        "dd", "yy", "cc", ">>", "<<", "==",
+    -- Add key to current sequence
+    key_sequence = key_sequence .. keystr
+    
+    -- Check for multi-key sequences first
+    local multi_key_patterns = {
+        "gg", "gw", "gq", "gt", "gT", "g~", "gu", "gU", "g%d+",
+        "zz", "zt", "zb", "zf", "zo", "zc", "za", "zr", "zm", "z%d+",
+        "dd", "yy", "cc", ">>", "<<", "==", "d%d+", "y%d+", "c%d+"
     }
     
-    for _, key in ipairs(complex_keys) do
-        vim.keymap.set('n', key, function()
-            record_combo(key)
-            -- Execute the original command
-            return key
-        end, { expr = true, silent = true, desc = "SanVim: Track combo " .. key })
+    local sequence_found = false
+    for _, pattern in ipairs(multi_key_patterns) do
+        if key_sequence:match(pattern .. "$") then
+            record_combo(key_sequence:match(pattern .. "$"))
+            key_sequence = ""
+            sequence_found = true
+            break
+        end
     end
+    
+    -- If no multi-key sequence found, check for single complex keys
+    if not sequence_found and is_complex_combo(keystr) then
+        record_combo(keystr)
+    end
+    
+    -- Reset sequence after a short delay
+    key_sequence_timer = vim.fn.timer_start(500, function()
+        key_sequence = ""
+    end)
+end
+
+-- Setup key tracking
+local function setup_combo_tracking()
+    if not config.combo_mode then return end
+    
+    -- Use vim.on_key to capture all keystrokes
+    vim.on_key(on_key_handler)
 end
 
 -- Reset word tracking when leaving insert mode
@@ -336,10 +369,10 @@ function M.setup(opts)
         config.sound_file = get_default_sound_path()
     end
     
-    -- Create autocommands and keymaps based on mode
+    -- Create autocommands and tracking based on mode
     if config.combo_mode then
-        -- Combo mode: setup keymaps to track complex combinations
-        setup_combo_keymaps()
+        -- Combo mode: setup key event tracking
+        setup_combo_tracking()
     else
         -- Word mode: track character input
         vim.api.nvim_create_autocmd("InsertCharPre", {
