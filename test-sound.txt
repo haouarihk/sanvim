@@ -1,0 +1,18 @@
+# SanVim Test File
+
+Type these words to test the plugin:
+
+- programming (should trigger at "progr")
+- development (should trigger at "devel")
+- configuration (should trigger at "confi")
+- documentation (should trigger at "docum")
+- implementation (should trigger at "imple")
+
+Try typing slowly and you'll hear the GTA San Andreas cheat code sound!
+
+Commands to try:
+- :SanVimToggle - Turn the plugin on/off
+- :SanVimCount - Show how many cheats you've activated
+- :SanVimReset - Reset the cheat counter
+
+Happy testing! 🎮✨ 
