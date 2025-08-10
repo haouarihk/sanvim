@@ -7,7 +7,14 @@ require("sanvim").setup()
 -- Advanced setup with custom options
 require("sanvim").setup({
     enabled = true,
-    min_word_length = 5, -- Change to 4 for more frequent triggers
+    
+    -- Combo mode settings (NEW!)
+    combo_mode = true, -- Set to false for word mode
+    combo_threshold = 5, -- Number of complex combos needed
+    combo_time_window = 5, -- Time window in seconds
+    
+    -- Word mode settings
+    min_word_length = 5, -- Change to 4 for more frequent triggers (word mode only)
     
     -- Custom sound file path (optional)
     -- The plugin automatically uses the included gta-cheat-sound.mp3
@@ -58,6 +65,8 @@ require("sanvim").setup({
 vim.keymap.set("n", "<leader>st", "<cmd>SanVimToggle<cr>", { desc = "Toggle SanVim" })
 vim.keymap.set("n", "<leader>sc", "<cmd>SanVimCount<cr>", { desc = "Show cheat count" })
 vim.keymap.set("n", "<leader>sr", "<cmd>SanVimReset<cr>", { desc = "Reset cheat count" })
+vim.keymap.set("n", "<leader>sm", "<cmd>SanVimMode<cr>", { desc = "Toggle combo/word mode" })
+vim.keymap.set("n", "<leader>ss", "<cmd>SanVimStatus<cr>", { desc = "Show combo status" })
 
 -- Optional: Auto-disable in certain file types
 vim.api.nvim_create_autocmd("FileType", {

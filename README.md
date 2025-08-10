@@ -1,14 +1,17 @@
 # 🎮 SanVim - GTA San Andreas Cheat Code Sound Plugin
 
-Turn your Neovim into GTA San Andreas cheat code mode! This plugin plays the iconic "ding" sound whenever you type a word that's 5+ characters long, just like entering cheat codes in the game.
+Turn your Neovim into GTA San Andreas cheat code mode! This plugin can trigger the iconic "ding" sound in two ways: when you type 5+ character words (word mode) or when you execute 5 complex key combinations within 5 seconds (combo mode), just like entering cheat codes in the game.
 
 ## ✨ Features
 
 - 🎵 **Authentic Sound**: Plays the classic GTA San Andreas cheat code sound
 - 🔤 **Word Detection**: Triggers on 5+ letter words (configurable)
+- ⌨️ **Combo Mode**: Triggers on 5 complex key combinations within 5 seconds
+- 🚫 **Text Mode Exclusion**: Combo mode ignores regular typing in insert mode
 - 🎯 **Random Messages**: Shows random cheat code messages like "HEALTH RESTORED"
 - 📊 **Cheat Counter**: Tracks how many "cheats" you've activated
 - 🎛️ **Easy Toggle**: Turn the plugin on/off with commands
+- 🔄 **Mode Switching**: Toggle between word mode and combo mode
 - 🖥️ **Cross-Platform**: Works on Windows, macOS, and Linux
 - 🚀 **LazyVim Ready**: Full LazyVim integration support
 
@@ -26,11 +29,14 @@ Add this to your LazyVim plugins configuration:
     config = function()
         require("sanvim").setup({
             enabled = true,
-            min_word_length = 5,
+            combo_mode = true, -- Use combo mode by default
+            combo_threshold = 5, -- Number of combos needed
+            combo_time_window = 5, -- Time window in seconds
+            min_word_length = 5, -- For word mode
             -- Customize cheat messages
             cheat_messages = {
                 "HEALTH RESTORED",
-                "WEAPONS GIVEN",
+                "WEAPONS GIVEN", 
                 "VEHICLE SPAWNED",
                 -- Add more!
             }
@@ -40,6 +46,8 @@ Add this to your LazyVim plugins configuration:
         { "<leader>st", "<cmd>SanVimToggle<cr>", desc = "Toggle SanVim" },
         { "<leader>sc", "<cmd>SanVimCount<cr>", desc = "Show cheat count" },
         { "<leader>sr", "<cmd>SanVimReset<cr>", desc = "Reset cheat count" },
+        { "<leader>sm", "<cmd>SanVimMode<cr>", desc = "Toggle combo/word mode" },
+        { "<leader>ss", "<cmd>SanVimStatus<cr>", desc = "Show combo status" },
     },
 }
 ```
@@ -149,16 +157,28 @@ cheat_messages = {
 - `:SanVimToggle` - Toggle the plugin on/off
 - `:SanVimCount` - Show total cheat count
 - `:SanVimReset` - Reset cheat counter to 0
+- `:SanVimMode` - Toggle between combo mode and word mode
+- `:SanVimStatus` - Show combo status (combos within time window)
 
 ## ⌨️ Keymaps (LazyVim)
 
 - `<leader>st` - Toggle SanVim
 - `<leader>sc` - Show cheat count  
 - `<leader>sr` - Reset cheat count
+- `<leader>sm` - Toggle combo/word mode
+- `<leader>ss` - Show combo status
 
 ## 🔧 How It Works
 
-1. **Character Tracking**: The plugin tracks every character you type in insert mode
+### Combo Mode (Default)
+1. **Key Combination Tracking**: Monitors complex key combinations (Ctrl+, Alt+, function keys, multi-key sequences)
+2. **Time Window**: Tracks combinations within a 5-second sliding window
+3. **Threshold Detection**: Triggers when 5 complex combos are executed within the time window
+4. **Insert Mode Exclusion**: Regular typing in insert mode doesn't count (avoiding text mode interference)
+5. **Sound & Message**: Plays the GTA sound and shows a random cheat message
+
+### Word Mode (Alternative)
+1. **Character Tracking**: Tracks every character you type in insert mode
 2. **Word Detection**: When you type 5+ consecutive letters, it triggers the cheat
 3. **Sound Playback**: Plays the GTA San Andreas "ding" sound
 4. **Message Display**: Shows a random cheat code message
@@ -166,10 +186,20 @@ cheat_messages = {
 
 ## 🎯 Use Cases
 
+### Combo Mode
+- **Advanced Users**: Reward skilled Vim navigation and editing
+- **Learning**: Encourage use of complex Vim combinations  
+- **Focus Sessions**: Trigger sounds during intensive editing workflows
+- **Muscle Memory**: Celebrate mastery of keyboard shortcuts
+
+### Word Mode  
 - **Coding Sessions**: Get that satisfying "ding" when typing long variable names
 - **Documentation**: Hear the sound when writing long words
+- **Beginners**: Simple trigger for new Vim users
+
+### Both Modes
 - **Gaming Nostalgia**: Relive the GTA San Andreas experience
-- **Productivity**: Make typing more fun and engaging
+- **Productivity**: Make editing more fun and engaging
 - **Streaming**: Add entertainment value to coding streams
 
 ## 🐛 Troubleshooting
